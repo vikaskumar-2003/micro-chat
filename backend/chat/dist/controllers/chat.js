@@ -32,7 +32,7 @@ export const getAllChat = TryCatch(async (req, res) => {
     const userId = req.user?._id;
     console.log("user", userId);
     if (!userId) {
-        return res.json(400).json({
+        return res.status(400).json({
             message: "user id not present",
         });
     }
@@ -62,7 +62,7 @@ export const getAllChat = TryCatch(async (req, res) => {
             return {
                 user: { _id: otherUserId, name: "unkonow user" },
                 chat: {
-                    ...chatWithUserData.toObject(),
+                    ...chat.toObject(),
                     latestMessage: chat.latestMessage || null,
                     unseenCount,
                 },
@@ -148,7 +148,7 @@ export const sendMessage = TryCatch(async (req, res) => {
 });
 export const getMessagesByChat = TryCatch(async (req, res) => {
     const userId = req.user?._id;
-    const { chatId } = req.body;
+    const { chatId } = req.params;
     if (!chatId) {
         return res.status(401).json({
             message: "ChatId Required"
@@ -171,10 +171,42 @@ export const getMessagesByChat = TryCatch(async (req, res) => {
             message: "You are not a participant of this chat"
         });
     }
-    const messagesToMarkedSeen = await getMessagesByChat.find({
+    const messagesToMarkedSeen = await Message.find({
         chatId: chatId,
         sender: { $ne: userId },
         seen: false
     });
+    await Message.updateMany({
+        chatId: chatId,
+        sender: { $ne: userId },
+        seen: false
+    }, {
+        seen: true,
+        seentAt: new Date()
+    });
+    const messages = await Message.find({
+        chatId
+    }).sort({ createdAt: -1 });
+    const otherUserId = chat.users.find((id) => id.toString() !== userId.toString());
+    try {
+        const { data } = await axios.get(`${process.env.USER_SERVICE}/api/v1/user/${otherUserId}`);
+        if (!otherUserId) {
+            return res.status(400).json({
+                message: "You are not a participant of this chat"
+            });
+        }
+        //socket work
+        res.json({
+            user: data,
+            messages,
+        });
+    }
+    catch (error) {
+        console.log(error);
+        res.json({
+            messages,
+            user: { _id: otherUserId, name: "unknow user" }
+        });
+    }
 });
 //# sourceMappingURL=chat.js.map

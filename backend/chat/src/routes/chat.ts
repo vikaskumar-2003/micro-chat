@@ -1,5 +1,5 @@
 import express from "express"
-import { createNewChat, getAllChat, sendMessage } from "../controllers/chat.js"
+import { createNewChat, getAllChat, getMessagesByChat, sendMessage } from "../controllers/chat.js"
 import { isAuth } from "../middleware/isAuth.js"
 import { upload } from "../middleware/multer.js"
 
@@ -10,5 +10,6 @@ router.get("/chat/all",isAuth,getAllChat)
 
 router.post("/message",isAuth,upload.single("image"),sendMessage)
 
+router.get("/message/:chatId",isAuth,getMessagesByChat)
 
 export default router
