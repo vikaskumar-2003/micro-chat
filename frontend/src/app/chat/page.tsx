@@ -10,6 +10,7 @@ import Cookies from "js-cookie";
 import axios from "axios";
 import ChatHeader from "@/components/ChatHeader";
 import ChatMessages from "@/components/ChatMessages";
+import MessageInput from "@/components/MessageInput";
 
 export interface Message {
   _id: string;
@@ -107,6 +108,84 @@ const Chat = () => {
     }
   }
 
+  const handleMessageSend=async(e:any,imageFile?:File|null)=>{
+    e.preventDefault()
+
+   if (!message.trim()&&!imageFile) {
+    return
+   }
+
+   //socket work
+
+   const token=Cookies.get("token")
+
+   if(!selectedUser){
+    return
+   }
+
+   try {
+    const formData=new FormData()
+    formData.append("chatId",selectedUser)
+
+    if (message.trim()) {
+      formData.append("text",message)
+    }
+
+    if(imageFile){
+    formData.append("image",imageFile)
+    }
+
+    const {data}=await axios.post(`${chat_service}/api/v1/message`,formData,{
+      headers:{
+        Authorization:`Bearer ${token}`,
+        "Content-Type":"multipart/form-data"
+      }
+    })
+
+     console.log(data,"data data");
+     if(!data){return}
+
+    setMessages((prev)=>{
+      const currentMessages=prev||[]
+      const messageExists=currentMessages.some((msg)=>msg._id===data.message._id)
+
+
+
+    
+
+      if (!messageExists) {
+        return [...currentMessages,data.message]
+      }
+
+      return currentMessages
+
+    })
+
+    setMessage("")
+     
+    const displayText=imageFile?"📷image":message
+    
+   } catch (error:any) {
+    console.log(error);
+    toast.error(error.response.data.message)
+    
+    
+   }
+
+  }
+
+  const handleTyping=(value:string)=>{
+    setMessage(value)
+
+   if(!selectedUser) return
+
+   //scoket setup
+
+
+
+
+  }
+
   useEffect(()=>{
 
     if (selectedUser) {
@@ -131,6 +210,7 @@ const Chat = () => {
 
            <ChatMessages selectedUser={selectedUser} messages={messages} loggedInUser={loggedInUser}/>
  
+             <MessageInput selectedUser={selectedUser} message={message}  setMessage={handleTyping} handleMessageSend={handleMessageSend} />
 
     </div>
     
