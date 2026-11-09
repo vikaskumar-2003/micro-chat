@@ -79,7 +79,8 @@ export const verifyUser = TryCatch(async (req, res) => {
   }
 
   const token = generateToken(user);
-
+ console.log(user,"log by log");
+ 
   res.json({
     message: "user verified",
     user,

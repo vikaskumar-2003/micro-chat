@@ -57,6 +57,7 @@ export const verifyUser = TryCatch(async (req, res) => {
         user = await User.create({ name, email });
     }
     const token = generateToken(user);
+    console.log(user, "log by log");
     res.json({
         message: "user verified",
         user,
