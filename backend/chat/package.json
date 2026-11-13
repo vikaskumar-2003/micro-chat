@@ -25,6 +25,7 @@
     "multer": "^2.5.0",
     "multer-storage-cloudinary": "^4.0.0",
     "nodemon": "^3.1.14",
+    "socket.io": "^4.8.4",
     "tsc": "^2.0.4"
   },
   "devDependencies": {

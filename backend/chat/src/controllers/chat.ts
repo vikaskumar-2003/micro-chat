@@ -3,6 +3,7 @@ import { TryCatch } from "../config/TryCatch.js";
 import type { AuthenticatedRequest } from "../middleware/isAuth.js";
 import { Chat } from "../models/chat.js";
 import { Message } from "../models/Messages.js";
+import { getRecieverSocketId, io } from "../config/socket.js";
 
 export const createNewChat = TryCatch(
   async (req: AuthenticatedRequest, res) => {
@@ -11,7 +12,7 @@ export const createNewChat = TryCatch(
     const { otherUserId } = req.body;
 
     if (!otherUserId) {
-      res.status(400).json({
+      return res.status(400).json({
         message: "other userid is required",
       });
     }
@@ -149,12 +150,25 @@ if(!otherUserId){
 }
 
 //message setup
+const receiverSocketId=getRecieverSocketId(otherUserId.toString())
+let isReceiverInChatRoom=false
+
+if(receiverSocketId){
+  const receiverSocket=io.sockets.sockets.get(receiverSocketId)
+
+ if (receiverSocket && receiverSocket.rooms.has(chatId)) {
+isReceiverInChatRoom=true
+  
+ }
+
+}
+
 
 let messageData:any={
     chatId:chatId,
     sender:senderId,
-    seen:false,
-    seenAt:undefined
+    seen:isReceiverInChatRoom,
+    seenAt:isReceiverInChatRoom?new Date():undefined
 }
 
 if(imageFile){
@@ -185,7 +199,25 @@ await Chat.findByIdAndUpdate(chatId,{
     new:true
 })
 
+io.to(chatId).emit("newMessage",savedMessage)
 
+if(receiverSocketId){
+  io.to(receiverSocketId).emit("newMeesage",savedMessage)
+
+}
+
+const senderSocketId=getRecieverSocketId(senderId.toString())
+if (senderSocketId) {
+  io.to(senderSocketId).emit("newMessage",savedMessage)
+}
+
+if(isReceiverInChatRoom &&senderSocketId){
+  io.to(senderSocketId).emit("messageSeen",{
+    chatId:chatId,
+    seenBy:otherUserId,
+    messageIds:[savedMessage._id]
+  })
+}
 
   res.status(200).json({
     message:savedMessage,
@@ -220,7 +252,7 @@ const chat=await Chat.findById(chatId)
 }
 
 const isUserInChat=chat.users.some(
-    (userId)=>userId.toString()===userId.toString()
+    (id)=>id.toString()===userId.toString()
 )
 
 if(!isUserInChat){
@@ -249,6 +281,13 @@ const messages=await Message.find({
 }).sort({createdAt:-1})
 
 const otherUserId=chat.users.find((id)=>id.toString()!==userId.toString())
+
+if (!otherUserId) {
+  return res.status(400).json({
+    message: "Other user not found"
+  });
+}
+
  
 try {
 
@@ -263,6 +302,19 @@ try {
         }
 
 //socket work
+
+if (messagesToMarkedSeen.length>0) {
+  const otherUserSocketId=getRecieverSocketId(otherUserId.toString())
+ 
+  if(otherUserSocketId){
+    io.to(otherUserSocketId).emit("messagesSeen",{
+      chatId:chatId,
+      seenBy:userId,
+      messageIds:messagesToMarkedSeen.map((msg)=>msg._id)
+    })
+  }
+
+}
 
 
 res.json({

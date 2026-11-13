@@ -12,10 +12,14 @@ interface CHATSIDEBARPROPS {
   loggedInUser: User | null;
   chats: any[] | null;
   selectedUser: string | null;
-  setSlectedUser: (userId: string | null) => void;
+  setSelectedUser: (userId: string | null) => void;
   handleLogout: () => void;
   createChat:(user:User)=>void
+  onlineUsers:string[]
 }
+
+
+
 
 const ChatSidebar = ({
   sidebarOpen,
@@ -28,11 +32,15 @@ const ChatSidebar = ({
   handleLogout,
   setSelectedUser,
   chats,
-  createChat
+  createChat,
+  onlineUsers
 }: CHATSIDEBARPROPS) => {
   console.log(users, "usersssss");
 
   const [searchQuery, setSearchQuery] = useState("");
+  console.log(chats,"hell hello");
+
+  if(!chats) return
 
   return (
     <aside
@@ -99,13 +107,18 @@ const ChatSidebar = ({
                     className="w-full text-left p-4 rounded-lg border border-gray-700 hover:border-gray-600 hover:border-gray-800 transition-colors "
                   >
                     <div className="flex items-center gap-3">
-                      <div className="realtive ">
+                      <div className="relative ">
                         <UserCircle className="w-6 h-6 text-gray-300 " />
+                         {
+                        onlineUsers.includes(u._id)&&(<span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-green-500 border-2 border-gray-900 "/>)
+                      }
                       </div>
+                     
                       <div className="flex-1 min-w-0 ">
                         <span className="font-medium text-white">{u.name}</span>
                         <div className="text-xs text-gray-400 mt-0.5">
                           {/* to show online offfline text */}
+                          {onlineUsers.includes(u._id)?"Online":"Ofline"}
                         </div>
                       </div>
                     </div>
@@ -115,16 +128,18 @@ const ChatSidebar = ({
           </div>
         ) : chats && chats.length > 0 ? (
           <div className="space-y-2 overflow-y-auto h-full pb-4">
-            {chats.map((chat) => {
-              const latestMessage = chat.chat.latestMessage;
-              const isSelected = selectedUser === chat.chat._id;
+            {chats?.map((chat) => {
+              console.log(chat,"kyu rai kay hai hum");
+              
+              const latestMessage = chat?.chat?.latestMessage;
+              const isSelected = selectedUser === chat?.chat?._id;
               const isSentBye = latestMessage?.sender === loggedInUser?._id;
-              const unseenCount = chat.chat.unseenCount || 0;
+              const unseenCount = chat?.chat?.unseenCount || 0;
               return (
                 <button
-                  key={chat.chat._id}
+                  key={chat?.chat?._id}
                   onClick={() => {
-                    setSelectedUser(chat.chat._id);
+                    setSelectedUser(chat?.chat?._id);
                     setSideBarOpen(false);
                   }}
                   className={` w-full text-left p-4 rounded-lg transition-colors ${isSelected ? "bg-blue-600 border-blue-500" : "border border-gray-700 hover:border-gray-600"} `}
@@ -134,14 +149,22 @@ const ChatSidebar = ({
                       <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center ">
                         <UserCircle className="w-7 h-7 text-gray-300" />
                         {/* online user ka work hai */}
+                      
+                        
+
                       </div>
+                      {
+                        onlineUsers.includes(chat?.user._id)&&(
+                          <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-green-500 border-2 border-gray-900 "/>
+                        )
+                      }
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
                         <span
                           className={` font-semibold truncate ${isSelected ? "text-white" : "text-gray-200"}`}
                         >
-                          {chat.user.name}
+                          {chat?.user.name}
                         </span>
                         {unseenCount > 0 && (
                           <div className="bg-red-600 text-white text-xs font-bold rounded-full min-w[22px] h-5.5 flex items-center px-2 ">
